@@ -1,0 +1,9 @@
+Y:\SteamLibrary\steamapps\common\RimWorld\Mods\Cheat Work\Assemblies\CheatWork.dll
+Y:\SteamLibrary\steamapps\common\RimWorld\Mods\Cheat Work\Source\obj\Release\CheatWork.csproj.AssemblyReference.cache
+Y:\SteamLibrary\steamapps\common\RimWorld\Mods\Cheat Work\Source\obj\Release\CheatWork.GeneratedMSBuildEditorConfig.editorconfig
+Y:\SteamLibrary\steamapps\common\RimWorld\Mods\Cheat Work\Source\obj\Release\CheatWork.AssemblyInfoInputs.cache
+Y:\SteamLibrary\steamapps\common\RimWorld\Mods\Cheat Work\Source\obj\Release\CheatWork.AssemblyInfo.cs
+Y:\SteamLibrary\steamapps\common\RimWorld\Mods\Cheat Work\Source\obj\Release\CheatWork.csproj.CoreCompileInputs.cache
+Y:\SteamLibrary\steamapps\common\RimWorld\Mods\Cheat Work\Source\obj\Release\CheatWork.dll
+Y:\SteamLibrary\steamapps\common\RimWorld\Mods\Cheat Work\Source\obj\Release\refint\CheatWork.dll
+Y:\SteamLibrary\steamapps\common\RimWorld\Mods\Cheat Work\Source\obj\Release\ref\CheatWork.dll

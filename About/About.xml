@@ -19,5 +19,5 @@
   <description>작업 지정을 등록하는 즉시 처리합니다. 파종 구역도 작물 선택 또는 구역 확장 즉시 파종합니다. 채굴, 해체, 바닥 및 기초 제거, 제초, 벌목, 수확, 지붕 제거를 지원하며 게임 설정에서 기능을 끌 수 있습니다.
 
 AI로 구현</description>
-  <modVersion>1.0.0</modVersion>
+  <modVersion>1.1.0</modVersion>
 </ModMetaData>

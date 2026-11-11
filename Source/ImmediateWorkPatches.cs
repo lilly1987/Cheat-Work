@@ -36,6 +36,26 @@ namespace Lilly.CheatWork
         }
     }
 
+    [HarmonyPatch(typeof(Zone_Growing), nameof(Zone_Growing.SetPlantDefToGrow))]
+    internal static class Zone_Growing_SetPlantDefToGrow_Patch
+    {
+        [HarmonyPostfix]
+        private static void Postfix(Zone_Growing __instance)
+        {
+            ImmediateWork.ProcessGrowingZone(__instance);
+        }
+    }
+
+    [HarmonyPatch(typeof(Zone_Growing), nameof(Zone_Growing.AddCell))]
+    internal static class Zone_Growing_AddCell_Patch
+    {
+        [HarmonyPostfix]
+        private static void Postfix(Zone_Growing __instance, IntVec3 __0)
+        {
+            ImmediateWork.ProcessGrowingZoneCell(__instance, __0);
+        }
+    }
+
     internal static class ImmediateWork
     {
         private static bool processing;
@@ -116,6 +136,86 @@ namespace Lilly.CheatWork
             {
                 processing = false;
             }
+        }
+
+        internal static void ProcessGrowingZone(Zone_Growing zone)
+        {
+            if (zone == null || !CheatWorkMod.Enabled || processing || !InGame)
+                return;
+
+            List<IntVec3> cells = zone.Cells;
+            for (int i = 0; i < cells.Count; i++)
+                ProcessGrowingZoneCell(zone, cells[i]);
+        }
+
+        internal static void ProcessGrowingZoneCell(Zone_Growing zone, IntVec3 cell)
+        {
+            if (zone == null || !CheatWorkMod.Enabled || processing || !InGame ||
+                !zone.allowSow || !zone.CanAcceptSowNow())
+                return;
+
+            Map map = zone.Map;
+            ThingDef plantDef = zone.GetPlantDefToGrow();
+            if (map == null || plantDef == null || plantDef.plant == null ||
+                !plantDef.plant.Sowable || !cell.InBounds(map) ||
+                !PlantUtility.CanNowPlantAt(plantDef, cell, map, false) ||
+                !PlantUtility.GrowthSeasonNow(cell, map, plantDef) ||
+                PlantUtility.AdjacentSowBlocker(plantDef, cell, map) != null)
+                return;
+
+            List<Thing> things = map.thingGrid.ThingsListAtFast(cell);
+            for (int i = 0; i < things.Count; i++)
+            {
+                if (things[i] is Plant || things[i].def.BlocksPlanting(false))
+                    return;
+            }
+
+            processing = true;
+            try
+            {
+                Plant plant = GenSpawn.Spawn(plantDef, cell, map, WipeMode.Vanish) as Plant;
+                if (plant == null)
+                {
+                    Log.Error("[Cheat Work] Failed to spawn sown plant " + plantDef.defName + ".");
+                    return;
+                }
+
+                plant.Growth = 0f;
+                plant.sown = true;
+                plant.Growth = 0.0001f;
+                map.mapDrawer.MapMeshDirty(cell, MapMeshFlagDefOf.Things);
+
+                Pawn worker = FindWorker(map);
+                if (worker == null)
+                    return;
+
+                worker.records.Increment(RecordDefOf.PlantsSown);
+                Find.HistoryEventsManager.RecordEvent(
+                    new HistoryEvent(HistoryEventDefOf.SowedPlant,
+                        NamedArgumentUtility.Named(worker, HistoryEventArgsNames.Doer)));
+                if (plantDef.plant.humanFoodPlant)
+                {
+                    Find.HistoryEventsManager.RecordEvent(
+                        new HistoryEvent(HistoryEventDefOf.SowedHumanFoodPlant,
+                            NamedArgumentUtility.Named(worker, HistoryEventArgsNames.Doer)));
+                }
+            }
+            finally
+            {
+                processing = false;
+            }
+        }
+
+        private static Pawn FindWorker(Map map)
+        {
+            List<Pawn> colonists = map.mapPawns.FreeColonists;
+            for (int i = 0; i < colonists.Count; i++)
+            {
+                if (colonists[i].Faction == Faction.OfPlayer)
+                    return colonists[i];
+            }
+
+            return null;
         }
 
         private static bool InGame

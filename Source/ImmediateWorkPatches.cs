@@ -310,7 +310,11 @@ namespace Lilly.CheatWork
             }
 
             if (mineable != null && mineable.Spawned && !mineable.Destroyed)
-                mineable.DestroyMined(null);
+            {
+                Pawn miner = FindWorker(map);
+                mineable.Notify_TookMiningDamage(mineable.HitPoints, miner);
+                mineable.DestroyMined(miner);
+            }
         }
 
         private static void Deconstruct(Designation designation)

@@ -364,7 +364,20 @@ namespace Lilly.CheatWork
                         if (manager.DesignationAt(cell, DesignationDefOf.MineVein) != null)
                             continue;
 
-                        manager.TryRemoveDesignationOn(connectedMineable, DesignationDefOf.Mine);
+                        Designation existingMineDesignation = null;
+                        foreach (Designation existingDesignation in manager.AllDesignations)
+                        {
+                            if (existingDesignation.def == DesignationDefOf.Mine &&
+                                existingDesignation.target.Cell == cell)
+                            {
+                                existingMineDesignation = existingDesignation;
+                                break;
+                            }
+                        }
+
+                        if (existingMineDesignation != null)
+                            manager.RemoveDesignation(existingMineDesignation);
+
                         Designation designation = new Designation(cell, DesignationDefOf.MineVein);
                         manager.AddDesignation(designation);
                         if (queuedMineDesignations.Add(designation))

@@ -311,9 +311,66 @@ namespace Lilly.CheatWork
 
             if (mineable != null && mineable.Spawned && !mineable.Destroyed)
             {
+                bool isMineVein = designation.def == DesignationDefOf.MineVein;
+                IntVec3 minedCell = mineable.Position;
+                ThingDef minedDef = mineable.def;
                 Pawn miner = FindWorker(map);
                 mineable.Notify_TookMiningDamage(mineable.HitPoints, miner);
                 mineable.DestroyMined(miner);
+
+                if (isMineVein)
+                    DesignateConnectedVeins(map, minedCell, minedDef);
+            }
+        }
+
+        private static void DesignateConnectedVeins(Map map, IntVec3 minedCell, ThingDef mineableDef)
+        {
+            Queue<IntVec3> cellsToCheck = new Queue<IntVec3>();
+            HashSet<IntVec3> checkedCells = new HashSet<IntVec3>();
+            cellsToCheck.Enqueue(minedCell);
+            checkedCells.Add(minedCell);
+
+            while (cellsToCheck.Count > 0)
+            {
+                IntVec3 current = cellsToCheck.Dequeue();
+                for (int xOffset = -1; xOffset <= 1; xOffset++)
+                {
+                    for (int zOffset = -1; zOffset <= 1; zOffset++)
+                    {
+                        if (xOffset == 0 && zOffset == 0)
+                            continue;
+
+                        IntVec3 cell = new IntVec3(current.x + xOffset, 0, current.z + zOffset);
+                        if (!cell.InBounds(map) || !checkedCells.Add(cell) || map.fogGrid.IsFogged(cell))
+                            continue;
+
+                        Mineable connectedMineable = null;
+                        List<Thing> things = map.thingGrid.ThingsListAtFast(cell);
+                        for (int i = 0; i < things.Count; i++)
+                        {
+                            Mineable candidate = things[i] as Mineable;
+                            if (candidate != null && candidate.def == mineableDef)
+                            {
+                                connectedMineable = candidate;
+                                break;
+                            }
+                        }
+
+                        if (connectedMineable == null)
+                            continue;
+
+                        cellsToCheck.Enqueue(cell);
+                        DesignationManager manager = map.designationManager;
+                        if (manager.DesignationAt(cell, DesignationDefOf.MineVein) != null)
+                            continue;
+
+                        manager.TryRemoveDesignationOn(connectedMineable, DesignationDefOf.Mine);
+                        Designation designation = new Designation(cell, DesignationDefOf.MineVein);
+                        manager.AddDesignation(designation);
+                        if (queuedMineDesignations.Add(designation))
+                            pendingMines.Enqueue(new PendingMine(map, manager, designation));
+                    }
+                }
             }
         }
 

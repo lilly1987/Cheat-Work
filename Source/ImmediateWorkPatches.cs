@@ -26,6 +26,16 @@ namespace Lilly.CheatWork
         }
     }
 
+    [HarmonyPatch(typeof(GameComponentUtility), nameof(GameComponentUtility.GameComponentTick))]
+    internal static class GameComponentUtility_GameComponentTick_Patch
+    {
+        [HarmonyPostfix]
+        private static void Postfix()
+        {
+            ImmediateWork.ProcessPendingMines();
+        }
+    }
+
     [HarmonyPatch(typeof(Area), "Set", new Type[] { typeof(IntVec3), typeof(bool) })]
     internal static class Area_Set_Patch
     {
@@ -59,6 +69,22 @@ namespace Lilly.CheatWork
     internal static class ImmediateWork
     {
         private static bool processing;
+        private static readonly Queue<PendingMine> pendingMines = new Queue<PendingMine>();
+        private static readonly HashSet<Designation> queuedMineDesignations = new HashSet<Designation>();
+
+        private readonly struct PendingMine
+        {
+            internal readonly Map Map;
+            internal readonly DesignationManager Manager;
+            internal readonly Designation Designation;
+
+            internal PendingMine(Map map, DesignationManager manager, Designation designation)
+            {
+                Map = map;
+                Manager = manager;
+                Designation = designation;
+            }
+        }
 
         internal static void ProcessDesignation(DesignationManager manager, Designation designation)
         {
@@ -75,16 +101,19 @@ namespace Lilly.CheatWork
             if (map == null)
                 return;
 
+            if (defName == "Mine" || defName == "MineVein")
+            {
+                if (queuedMineDesignations.Add(designation))
+                    pendingMines.Enqueue(new PendingMine(map, manager, designation));
+                return;
+            }
+
             Plant plant = null;
             processing = true;
             try
             {
                 switch (defName)
                 {
-                    case "Mine":
-                    case "MineVein":
-                        Mine(map, designation);
-                        break;
                     case "Deconstruct":
                         Deconstruct(designation);
                         break;
@@ -113,6 +142,49 @@ namespace Lilly.CheatWork
                     map.designationManager.TryRemoveDesignationOn(plant, DesignationDefOf.CutPlant);
                 if (manager.AllDesignations.Contains(designation))
                     manager.RemoveDesignation(designation);
+            }
+        }
+
+        internal static void ProcessPendingMines()
+        {
+            if (processing || pendingMines.Count == 0)
+                return;
+
+            if (!CheatWorkMod.Enabled || !InGame)
+            {
+                pendingMines.Clear();
+                queuedMineDesignations.Clear();
+                return;
+            }
+
+            processing = true;
+            try
+            {
+                int queuedCount = pendingMines.Count;
+                for (int i = 0; i < queuedCount; i++)
+                {
+                    PendingMine pending = pendingMines.Dequeue();
+                    queuedMineDesignations.Remove(pending.Designation);
+
+                    if (pending.Map == null || pending.Manager == null ||
+                        pending.Manager.map != pending.Map ||
+                        !pending.Manager.AllDesignations.Contains(pending.Designation))
+                        continue;
+
+                    try
+                    {
+                        Mine(pending.Map, pending.Designation);
+                        pending.Manager.RemoveDesignation(pending.Designation);
+                    }
+                    catch (Exception exception)
+                    {
+                        Log.Error("[Cheat Work] Failed to process a queued mine designation: " + exception);
+                    }
+                }
+            }
+            finally
+            {
+                processing = false;
             }
         }
 

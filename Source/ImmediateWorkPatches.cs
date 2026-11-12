@@ -109,39 +109,42 @@ namespace Lilly.CheatWork
             }
 
             Plant plant = null;
-            processing = true;
-            try
+            using (WorkOutputStorage.Begin(map))
             {
-                switch (defName)
+                processing = true;
+                try
                 {
-                    case "Deconstruct":
-                        Deconstruct(designation);
-                        break;
-                    case "RemoveFloor":
-                        RemoveFloor(map, designation.target.Cell);
-                        break;
-                    case "RemoveFoundation":
-                        RemoveFoundation(map, designation.target.Cell);
-                        break;
-                    case "CutPlant":
-                        plant = designation.target.Thing as Plant;
-                        if (plant != null)
-                            CutPlant(map, plant);
-                        break;
-                    case "HarvestPlant":
-                        plant = designation.target.Thing as Plant;
-                        if (plant != null)
-                            HarvestPlant(map, plant);
-                        break;
+                    switch (defName)
+                    {
+                        case "Deconstruct":
+                            Deconstruct(designation);
+                            break;
+                        case "RemoveFloor":
+                            RemoveFloor(map, designation.target.Cell);
+                            break;
+                        case "RemoveFoundation":
+                            RemoveFoundation(map, designation.target.Cell);
+                            break;
+                        case "CutPlant":
+                            plant = designation.target.Thing as Plant;
+                            if (plant != null)
+                                CutPlant(map, plant);
+                            break;
+                        case "HarvestPlant":
+                            plant = designation.target.Thing as Plant;
+                            if (plant != null)
+                                HarvestPlant(map, plant);
+                            break;
+                    }
                 }
-            }
-            finally
-            {
-                processing = false;
-                if (plant != null)
-                    map.designationManager.TryRemoveDesignationOn(plant, DesignationDefOf.CutPlant);
-                if (manager.AllDesignations.Contains(designation))
-                    manager.RemoveDesignation(designation);
+                finally
+                {
+                    processing = false;
+                    if (plant != null)
+                        map.designationManager.TryRemoveDesignationOn(plant, DesignationDefOf.CutPlant);
+                    if (manager.AllDesignations.Contains(designation))
+                        manager.RemoveDesignation(designation);
+                }
             }
         }
 
@@ -173,8 +176,11 @@ namespace Lilly.CheatWork
 
                     try
                     {
-                        Mine(pending.Map, pending.Designation);
-                        pending.Manager.RemoveDesignation(pending.Designation);
+                        using (WorkOutputStorage.Begin(pending.Map))
+                        {
+                            Mine(pending.Map, pending.Designation);
+                            pending.Manager.RemoveDesignation(pending.Designation);
+                        }
                     }
                     catch (Exception exception)
                     {
@@ -200,9 +206,12 @@ namespace Lilly.CheatWork
             processing = true;
             try
             {
-                map.roofGrid.SetRoof(cell, null);
-                RoofCollapseCellsFinder.CheckCollapseFlyingRoofs(
-                    new List<IntVec3> { cell }, map, true, false);
+                using (WorkOutputStorage.Begin(map))
+                {
+                    map.roofGrid.SetRoof(cell, null);
+                    RoofCollapseCellsFinder.CheckCollapseFlyingRoofs(
+                        new List<IntVec3> { cell }, map, true, false);
+                }
             }
             finally
             {

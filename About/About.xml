@@ -23,5 +23,5 @@ Supported instant designations include mining, deconstruction, floor and foundat
 즉시 작업 지정을 처리하고, 플레이어 작업으로 생성된 운반 가능 아이템을 저장고로 자동 이동합니다.
 
 채굴, 해체, 바닥 및 기초 제거, 식물 제초와 수확, 파종 구역의 즉시 파종, 지붕 제거를 지원합니다. 일반 작업(제작, 낚시, 수확, 해체 등)으로 생성된 아이템도 플레이어 저장고의 유효한 칸으로 즉시 이동합니다. 바닐라 저장 필터, 우선순위와 공간 조건을 따르며, 알맞은 저장 칸이 없으면 결과물은 생성 위치에 남습니다. 이 기능은 모드 설정에서 켜고 끌 수 있습니다.</description>
-  <modVersion>1.3.0</modVersion>
+  <modVersion>1.3.1</modVersion>
 </ModMetaData>
